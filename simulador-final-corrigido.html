@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Busca em Grafos - BFS e DFS</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+.container { max-width: 1600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+h2 { color: #333; }
+.controls { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 5px; }
+.control-row { margin: 10px 0; }
+label { font-weight: bold; margin-right: 10px; }
+input[type=number] { width: 80px; font-size: 16px; padding: 5px; margin-right: 15px; }
+button { font-size: 16px; padding: 8px 15px; margin: 5px; cursor: pointer; background: #4CAF50; color: white; border: none; border-radius: 4px; }
+button:hover { background: #45a049; }
+button:disabled { background: #ccc; cursor: not-allowed; }
+.step-button { background: #2196F3; }
+.step-button:hover { background: #0b7dda; }
+.reset-button { background: #f44336; }
+.reset-button:hover { background: #da190b; }
+.graph-type-button { background: #7B1FA2; }
+.graph-type-button:hover { background: #6A1B9A; }
+.graph-type-button.active { background: #4A148C; border: 3px solid #311B92; }
+.algo-button { background: #1565C0; }
+.algo-button:hover { background: #0D47A1; }
+.algo-button.active { background: #0D47A1; border: 3px solid #01579B; }
+.version-button { background: #9C27B0; }
+.version-button:hover { background: #7B1FA2; }
+.version-button.active { background: #6A1B9A; border: 3px solid #4A148C; }
+.comparison-button { background: #FF6F00; }
+.comparison-button:hover { background: #E65100; }
+.comparison-button.active { background: #D84315; border: 3px solid #BF360C; }
+.comparison-type-button { background: #00897B; }
+.comparison-type-button:hover { background: #00796B; }
+.comparison-type-button.active { background: #00695C; border: 3px solid #004D40; }
+.single-mode .canvas-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.single-mode .canvas-wrapper { overflow: auto; max-height: 500px; border: 2px solid #ddd; background: white; }
+.single-mode canvas { display: block; margin: 0; }
+.comparison-mode .comparison-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+.comparison-mode .comparison-section { border: 2px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; }
+.comparison-mode .section-title { font-weight: bold; font-size: 18px; color: #fff; padding: 10px; margin: -15px -15px 15px -15px; border-radius: 6px 6px 0 0; text-align: center; }
+.comparison-mode .left-title { background: #1565C0; }
+.comparison-mode .right-title { background: #6A1B9A; }
+.comparison-mode .canvas-wrapper { overflow: auto; max-height: 400px; border: 2px solid #ddd; background: white; margin: 10px 0; }
+.comparison-mode canvas { display: block; margin: 0; }
+.comparison-mode .ds-comparison { grid-column: 1 / -1; }
+.comparison-mode .output-comparison { grid-column: 1 / -1; }
+.canvas-label { font-weight: bold; color: #555; margin-top: 10px; margin-bottom: 5px; }
+#output { margin-top: 20px; white-space: pre-wrap; font-family: monospace; border: 1px solid #ddd; padding: 15px; background: #f9f9f9; max-height: 300px; overflow-y: auto; font-size: 14px; }
+.output-box { white-space: pre-wrap; font-family: monospace; border: 1px solid #ddd; padding: 15px; background: #f9f9f9; max-height: 250px; overflow-y: auto; font-size: 13px; margin-top: 10px; }
+.state-display { margin: 15px 0; padding: 15px; background: #e3f2fd; border-left: 4px solid #2196F3; border-radius: 4px; }
+.state-display h3 { margin-top: 0; color: #1976D2; }
+.var-display { display: inline-block; margin: 5px 15px 5px 0; padding: 5px 10px; background: white; border-radius: 3px; font-family: monospace; }
+.ds-display { background: #ffe0b2; padding: 10px; border-radius: 4px; margin: 10px 0; }
+.algo-info { display: inline-block; margin-left: 20px; padding: 5px 10px; background: #bbdefb; border-radius: 4px; font-size: 14px; font-weight: bold; color: #0D47A1; }
+.hidden { display: none !important; }
+.pattern-row { margin: 10px 0; padding: 10px; background: #e8f5e9; border-radius: 5px; }
+</style>
+</head>
+<body>
+<div class="container single-mode" id="mainContainer">
+<h2>Simulador de Busca em Grafos <span class="algo-info" id="algoInfo">BFS</span></h2>
+
+<div class="controls">
+  <div class="control-row">
+    <strong>Tipo de Grafo:</strong>
+    <button class="graph-type-button active" id="undirectedBtn" onclick="setGraphType('undirected')">Grafos Não Dirigidos</button>
+    <button class="graph-type-button" id="directedBtn" onclick="setGraphType('directed')">Grafos Dirigidos (Dígrafos)</button>
+  </div>
+
+  <div class="control-row" id="undirectedAlgoRow">
+    <strong>Algoritmo:</strong>
+    <button class="algo-button active" id="bfsBtn" onclick="setAlgorithm('bfs')">BFS</button>
+    <button class="algo-button" id="dfsBtn" onclick="setAlgorithm('dfs')">DFS</button>
+  </div>
+  
+  <div class="control-row hidden" id="versionRow">
+    <strong>Versão DFS:</strong>
+    <button class="version-button active" id="recursiveBtn" onclick="setDFSVersion('recursive')">Recursiva</button>
+    <button class="version-button" id="iterativeBtn" onclick="setDFSVersion('iterative')">Iterativa</button>
+  </div>
+  
+  <div class="control-row">
+    <button class="comparison-button" id="comparisonBtn" onclick="toggleComparison()">🔍 Modo Comparação</button>
+  </div>
+  
+  <div class="control-row hidden" id="comparisonTypeRow">
+    <strong>Tipo de Comparação:</strong>
+    <button class="comparison-type-button active" id="bfsVsDfsBtn" onclick="setComparisonType('bfs-vs-dfs')">BFS x DFS</button>
+    <button class="comparison-type-button" id="dfsCompBtn" onclick="setComparisonType('dfs-comparison')">DFS: Recursivo x Iterativo</button>
+  </div>
+  
+  <div class="control-row" id="singlePatternRow">
+    <label for="numVertices">Número de vértices:</label>
+    <input type="number" id="numVertices" value="8" min="3" max="12" />
+    <button onclick="generateRandomGraph()">Gerar Grafo Aleatório</button>
+    <button onclick="loadDefaultGraph()">Carregar Padrão 1</button>
+    <button onclick="loadDefaultGraph2()">Carregar Padrão 2</button>
+    <button class="step-button" id="stepBtn" onclick="stepSimulation()" disabled>Próximo Passo</button>
+    <button class="reset-button" onclick="resetSimulation()">Reiniciar</button>
+  </div>
+  
+  <div class="pattern-row hidden" id="comparisonPatternRow">
+    <strong>Padrão para Comparação:</strong>
+    <button onclick="loadComparisonPattern(1)">Padrão 1</button>
+    <button onclick="loadComparisonPattern(2)">Padrão 2</button>
+    <button onclick="loadComparisonPattern(3)">Padrão 3</button>
+    <label for="numVerticesComp">Vértices:</label>
+    <input type="number" id="numVerticesComp" value="8" min="3" max="12" />
+    <button onclick="generateRandomGraphComparison()">Gerar Aleatório</button>
+    <button class="step-button" id="stepBtnComp" onclick="stepSimulation()" disabled>Próximo Passo</button>
+    <button class="reset-button" onclick="resetSimulation()">Reiniciar</button>
+  </div>
+
+  <div class="control-row hidden" id="directedPatternRow">
+    <label for="numVerticesDir">Número de vértices:</label>
+    <input type="number" id="numVerticesDir" value="10" min="3" max="12" />
+    <button onclick="generateRandomDirectedGraph()">Gerar Dígrafo Aleatório</button>
+    <button onclick="loadDirectedGraph()">Carregar Padrão</button>
+    <button class="step-button" id="stepBtnDir" onclick="stepSimulation()" disabled>Próximo Passo</button>
+    <button class="reset-button" onclick="resetSimulation()">Reiniciar</button>
+  </div>
+
+  <div class="pattern-row hidden" id="directedComparisonRow">
+    <button onclick="loadDirectedGraph()">Carregar Padrão</button>
+    <label for="numVerticesDirComp">Vértices:</label>
+    <input type="number" id="numVerticesDirComp" value="10" min="3" max="12" />
+    <button onclick="generateRandomDirectedGraphComparison()">Gerar Aleatório</button>
+    <button class="step-button" id="stepBtnDirComp" onclick="stepSimulation()" disabled>Próximo Passo</button>
+    <button class="reset-button" onclick="resetSimulation()">Reiniciar</button>
+  </div>
+</div>
+
+<div id="singleModeLayout">
+  <div class="canvas-container">
+    <div>
+      <div class="canvas-label" id="graphLabel">Grafo (não orientado):</div>
+      <div class="canvas-wrapper">
+        <canvas id="graph-canvas" width="650" height="500"></canvas>
+      </div>
+    </div>
+    <div>
+      <div class="canvas-label">Árvore de Exploração:</div>
+      <div class="canvas-wrapper">
+        <canvas id="tree-canvas" width="650" height="500"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="canvas-label" id="dsLabel">Fila:</div>
+  <canvas id="ds-canvas" width="1300" height="150"></canvas>
+
+  <div class="state-display" id="stateDisplay" style="display:none;">
+    <h3>Estado Atual</h3>
+    <div id="variables"></div>
+    <div class="ds-display">
+      <strong>Estrutura:</strong> <span id="dsContent">[]</span>
+    </div>
+  </div>
+
+  <div id="output"></div>
+</div>
+
+<div id="comparisonModeLayout" class="hidden">
+  <div class="comparison-container">
+    <div class="comparison-section">
+      <div class="section-title left-title" id="leftTitle">BFS</div>
+      <div class="canvas-label">Grafo com Exploração:</div>
+      <div class="canvas-wrapper">
+        <canvas id="graph-canvas-left" width="600" height="400"></canvas>
+      </div>
+      <div class="canvas-label">Árvore de Exploração:</div>
+      <div class="canvas-wrapper">
+        <canvas id="tree-canvas-left" width="600" height="400"></canvas>
+      </div>
+    </div>
+    
+    <div class="comparison-section">
+      <div class="section-title right-title" id="rightTitle">DFS</div>
+      <div class="canvas-label">Grafo com Exploração:</div>
+      <div class="canvas-wrapper">
+        <canvas id="graph-canvas-right" width="600" height="400"></canvas>
+      </div>
+      <div class="canvas-label">Árvore de Exploração:</div>
+      <div class="canvas-wrapper">
+        <canvas id="tree-canvas-right" width="600" height="400"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="comparison-container ds-comparison">
+    <div class="comparison-section">
+      <div class="section-title left-title" id="leftDSTitle">Estrutura</div>
+      <canvas id="ds-canvas-left" width="750" height="150"></canvas>
+      <div class="state-display">
+        <div id="variables-left"></div>
+        <div class="ds-display">
+          <strong>Estrutura:</strong> <span id="dsContent-left">[]</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="comparison-section">
+      <div class="section-title right-title" id="rightDSTitle">Estrutura</div>
+      <canvas id="ds-canvas-right" width="750" height="150"></canvas>
+      <div class="state-display">
+        <div id="variables-right"></div>
+        <div class="ds-display">
+          <strong>Estrutura:</strong> <span id="dsContent-right">[]</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="comparison-container output-comparison">
+    <div class="comparison-section">
+      <div class="section-title left-title" id="leftOutputTitle">Passo a Passo</div>
+      <div class="output-box" id="output-left"></div>
+    </div>
+    
+    <div class="comparison-section">
+      <div class="section-title right-title" id="rightOutputTitle">Passo a Passo</div>
+      <div class="output-box" id="output-right"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+let vertices = [];
+let edges = [];
+let adjList = {};
+let currentGraphType = 'default1';
+let isDirected = false;
+let comparisonMode = false;
+let currentAlgorithm = 'bfs';
+let dfsVersion = 'recursive';
+let comparisonType = 'bfs-vs-dfs';
+let comparisonLeftAlgo = 'bfs';
+let comparisonRightAlgo = 'dfs-recursive';
+let currentComparisonPattern = 1;
+
+let state = { marked: {}, expl: {}, ds: [], cont: 0, currentVertex: null, steps: [], stepIndex: 0, treeEdges: [], treeParent: {}, output: '' };
+let stateLeft = { marked: {}, expl: {}, ds: [], cont: 0, currentVertex: null, steps: [], stepIndex: 0, treeEdges: [], treeParent: {}, output: '' };
+let stateRight = { marked: {}, expl: {}, ds: [], cont: 0, currentVertex: null, steps: [], stepIndex: 0, treeEdges: [], treeParent: {}, output: '' };
+
+let simulationStarted = false;
+let canvases = {};
+
+function init() {
+  canvases.graph = document.getElementById('graph-canvas');
+  canvases.graphCtx = canvases.graph.getContext('2d');
+  canvases.tree = document.getElementById('tree-canvas');
+  canvases.treeCtx = canvases.tree.getContext('2d');
+  canvases.ds = document.getElementById('ds-canvas');
+  canvases.dsCtx = canvases.ds.getContext('2d');
+  
+  canvases.graphLeft = document.getElementById('graph-canvas-left');
+  canvases.graphLeftCtx = canvases.graphLeft.getContext('2d');
+  canvases.treeLeft = document.getElementById('tree-canvas-left');
+  canvases.treeLeftCtx = canvases.treeLeft.getContext('2d');
+  canvases.dsLeft = document.getElementById('ds-canvas-left');
+  canvases.dsLeftCtx = canvases.dsLeft.getContext('2d');
+  
+  canvases.graphRight = document.getElementById('graph-canvas-right');
+  canvases.graphRightCtx = canvases.graphRight.getContext('2d');
+  canvases.treeRight = document.getElementById('tree-canvas-right');
+  canvases.treeRightCtx = canvases.treeRight.getContext('2d');
+  canvases.dsRight = document.getElementById('ds-canvas-right');
+  canvases.dsRightCtx = canvases.dsRight.getContext('2d');
+  
+  setGraphType('undirected');
+  loadDefaultGraph2();
+}
+
+function setGraphType(type) {
+  if (comparisonMode) return;
+  
+  isDirected = (type === 'directed');
+  
+  document.getElementById('undirectedBtn').classList.remove('active');
+  document.getElementById('directedBtn').classList.remove('active');
+  document.getElementById('singlePatternRow').classList.add('hidden');
+  document.getElementById('directedPatternRow').classList.add('hidden');
+  document.getElementById('versionRow').classList.add('hidden');
+  document.getElementById('comparisonTypeRow').classList.add('hidden');
+  
+  if (isDirected) {
+    document.getElementById('directedBtn').classList.add('active');
+    document.getElementById('directedPatternRow').classList.remove('hidden');
+    document.getElementById('graphLabel').textContent = 'Dígrafo (orientado):';
+    loadDirectedGraph();
+  } else {
+    document.getElementById('undirectedBtn').classList.add('active');
+    document.getElementById('singlePatternRow').classList.remove('hidden');
+    document.getElementById('graphLabel').textContent = 'Grafo (não orientado):';
+    loadDefaultGraph2();
+  }
+  
+  resetSimulation();
+}
+
+function setAlgorithm(algo) {
+  if (comparisonMode) return;
+  
+  currentAlgorithm = algo;
+  
+  document.getElementById('bfsBtn').classList.remove('active');
+  document.getElementById('dfsBtn').classList.remove('active');
+  
+  let versionRow = document.getElementById('versionRow');
+  
+  if (algo === 'bfs') {
+    document.getElementById('bfsBtn').classList.add('active');
+    document.getElementById('algoInfo').textContent = 'BFS';
+    document.getElementById('dsLabel').textContent = 'Fila (Queue):';
+    versionRow.classList.add('hidden');
+  } else {
+    document.getElementById('dfsBtn').classList.add('active');
+    if (!isDirected) {
+      document.getElementById('algoInfo').textContent = `DFS (${dfsVersion === 'recursive' ? 'Recursivo' : 'Iterativo'})`;
+      document.getElementById('dsLabel').textContent = dfsVersion === 'recursive' ? 'Pilha de Chamadas:' : 'Pilha (Stack):';
+      versionRow.classList.remove('hidden');
+    } else {
+      document.getElementById('algoInfo').textContent = 'DFS (Recursivo)';
+      document.getElementById('dsLabel').textContent = 'Pilha de Chamadas:';
+    }
+  }
+  
+  resetSimulation();
+}
+
+function setDFSVersion(version) {
+  if (comparisonMode || isDirected) return;
+  
+  dfsVersion = version;
+  
+  document.getElementById('recursiveBtn').classList.remove('active');
+  document.getElementById('iterativeBtn').classList.remove('active');
+  
+  if (version === 'recursive') {
+    document.getElementById('recursiveBtn').classList.add('active');
+    document.getElementById('algoInfo').textContent = 'DFS (Recursivo)';
+    document.getElementById('dsLabel').textContent = 'Pilha de Chamadas:';
+  } else {
+    document.getElementById('iterativeBtn').classList.add('active');
+    document.getElementById('algoInfo').textContent = 'DFS (Iterativo)';
+    document.getElementById('dsLabel').textContent = 'Pilha (Stack):';
+  }
+  
+  resetSimulation();
+}
+
+function setComparisonType(type) {
+  if (!comparisonMode) return;
+  
+  comparisonType = type;
+  
+  document.getElementById('bfsVsDfsBtn').classList.remove('active');
+  document.getElementById('dfsCompBtn').classList.remove('active');
+  
+  if (type === 'bfs-vs-dfs') {
+    document.getElementById('bfsVsDfsBtn').classList.add('active');
+    comparisonLeftAlgo = 'bfs';
+    comparisonRightAlgo = isDirected ? 'dfs-recursive' : 'dfs-recursive';
+  } else {
+    document.getElementById('dfsCompBtn').classList.add('active');
+    comparisonLeftAlgo = 'dfs-recursive';
+    comparisonRightAlgo = 'dfs-iterative';
+  }
+  
+  updateComparisonTitles();
+  loadComparisonPattern(currentComparisonPattern);
+}
+
+function toggleComparison() {
+  comparisonMode = !comparisonMode;
+  
+  let container = document.getElementById('mainContainer');
+  let singleLayout = document.getElementById('singleModeLayout');
+  let comparisonLayout = document.getElementById('comparisonModeLayout');
+  let comparisonBtn = document.getElementById('comparisonBtn');
+  let algoInfo = document.getElementById('algoInfo');
+  let singlePatternRow = document.getElementById('singlePatternRow');
+  let directedPatternRow = document.getElementById('directedPatternRow');
+  let comparisonPatternRow = document.getElementById('comparisonPatternRow');
+  let directedComparisonRow = document.getElementById('directedComparisonRow');
+  let comparisonTypeRow = document.getElementById('comparisonTypeRow');
+  
+  if (comparisonMode) {
+    container.classList.remove('single-mode');
+    container.classList.add('comparison-mode');
+    singleLayout.classList.add('hidden');
+    comparisonLayout.classList.remove('hidden');
+    comparisonBtn.classList.add('active');
+    comparisonBtn.textContent = '← Modo Individual';
+    algoInfo.textContent = 'Modo Comparação';
+    
+    singlePatternRow.classList.add('hidden');
+    directedPatternRow.classList.add('hidden');
+    
+    if (isDirected) {
+      directedComparisonRow.classList.remove('hidden');
+      comparisonPatternRow.classList.add('hidden');
+    } else {
+      comparisonPatternRow.classList.remove('hidden');
+      directedComparisonRow.classList.add('hidden');
+      comparisonTypeRow.classList.remove('hidden');
+    }
+    
+    document.getElementById('undirectedBtn').disabled = true;
+    document.getElementById('directedBtn').disabled = true;
+    document.getElementById('bfsBtn').disabled = true;
+    document.getElementById('dfsBtn').disabled = true;
+    document.getElementById('recursiveBtn').disabled = true;
+    document.getElementById('iterativeBtn').disabled = true;
+    
+    comparisonType = 'bfs-vs-dfs';
+    comparisonLeftAlgo = 'bfs';
+    comparisonRightAlgo = isDirected ? 'dfs-recursive' : 'dfs-recursive';
+    document.getElementById('bfsVsDfsBtn').classList.add('active');
+    document.getElementById('dfsCompBtn').classList.remove('active');
+    
+    updateComparisonTitles();
+    if (isDirected) {
+      loadDirectedGraph();
+    } else {
+      loadComparisonPattern(1);
+    }
+  } else {
+    container.classList.remove('comparison-mode');
+    container.classList.add('single-mode');
+    singleLayout.classList.remove('hidden');
+    comparisonLayout.classList.add('hidden');
+    comparisonBtn.classList.remove('active');
+    comparisonBtn.textContent = '🔍 Modo Comparação';
+    
+    comparisonPatternRow.classList.add('hidden');
+    directedComparisonRow.classList.add('hidden');
+    comparisonTypeRow.classList.add('hidden');
+    
+    if (isDirected) {
+      directedPatternRow.classList.remove('hidden');
+    } else {
+      singlePatternRow.classList.remove('hidden');
+    }
+    
+    document.getElementById('undirectedBtn').disabled = false;
+    document.getElementById('directedBtn').disabled = false;
+    document.getElementById('bfsBtn').disabled = false;
+    document.getElementById('dfsBtn').disabled = false;
+    document.getElementById('recursiveBtn').disabled = false;
+    document.getElementById('iterativeBtn').disabled = false;
+    
+    setAlgorithm(currentAlgorithm);
+  }
+}
+
+function updateComparisonTitles() {
+  let leftName, rightName, leftDS, rightDS;
+  
+  if (comparisonType === 'bfs-vs-dfs') {
+    leftName = 'BFS';
+    rightName = 'DFS RECURSIVO';
+    leftDS = 'Fila (Queue)';
+    rightDS = 'Pilha de Chamadas';
+  } else {
+    leftName = 'DFS RECURSIVO';
+    rightName = 'DFS ITERATIVO';
+    leftDS = 'Pilha de Chamadas (Recursivo)';
+    rightDS = 'Pilha (Iterativo)';
+  }
+  
+  document.getElementById('leftTitle').textContent = leftName;
+  document.getElementById('rightTitle').textContent = rightName;
+  document.getElementById('leftDSTitle').textContent = leftDS;
+  document.getElementById('rightDSTitle').textContent = rightDS;
+  document.getElementById('leftOutputTitle').textContent = `Passo a Passo (${leftName})`;
+  document.getElementById('rightOutputTitle').textContent = `Passo a Passo (${rightName})`;
+}
+
+function loadDirectedGraph() {
+  currentGraphType = 'directed_default';
+  vertices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  let edgeList = [
+    [1, 4], [1, 5], [1, 9],
+    [2, 3], [2, 9],
+    [3, 6], [3, 7], [3, 10],
+    [4, 5],
+    [5, 9],
+    [6, 9], [6, 10],
+    [8, 9], [8, 10],
+    [9, 6]
+  ];
+  buildGraphFromEdges(edgeList);
+}
+
+function generateRandomDirectedGraph() {
+  currentGraphType = 'random_directed';
+  let n = parseInt(document.getElementById('numVerticesDir').value);
+  if (n < 3 || n > 12) { alert('Escolha entre 3 e 12 vértices'); return; }
+  
+  vertices = [];
+  for (let i = 1; i <= n; i++) vertices.push(i);
+  
+  let edgeList = [], connected = [1], unconnected = [];
+  for (let i = 2; i <= n; i++) unconnected.push(i);
+  
+  while (unconnected.length > 0) {
+    let fromIdx = Math.floor(Math.random() * connected.length);
+    let toIdx = Math.floor(Math.random() * unconnected.length);
+    let from = connected[fromIdx], to = unconnected[toIdx];
+    edgeList.push([from, to]);
+    connected.push(to);
+    unconnected.splice(toIdx, 1);
+  }
+  
+  let numExtraEdges = Math.floor(n * 0.6);
+  for (let i = 0; i < numExtraEdges; i++) {
+    let from = Math.floor(Math.random() * n) + 1;
+    let to = Math.floor(Math.random() * n) + 1;
+    if (from !== to && !edgeList.some(e => e[0]===from && e[1]===to)) {
+      edgeList.push([from, to]);
+    }
+  }
+  
+  buildGraphFromEdges(edgeList);
+}
+
+function generateRandomDirectedGraphComparison() {
+  let n = parseInt(document.getElementById('numVerticesDirComp').value);
+  if (n < 3 || n > 12) { alert('Escolha entre 3 e 12 vértices'); return; }
+  
+  currentGraphType = 'random_directed_comp';
+  vertices = [];
+  for (let i = 1; i <= n; i++) vertices.push(i);
+  
+  let edgeList = [], connected = [1], unconnected = [];
+  for (let i = 2; i <= n; i++) unconnected.push(i);
+  
+  while (unconnected.length > 0) {
+    let fromIdx = Math.floor(Math.random() * connected.length);
+    let toIdx = Math.floor(Math.random() * unconnected.length);
+    let from = connected[fromIdx], to = unconnected[toIdx];
+    edgeList.push([from, to]);
+    connected.push(to);
+    unconnected.splice(toIdx, 1);
+  }
+  
+  let numExtraEdges = Math.floor(n * 0.6);
+  for (let i = 0; i < numExtraEdges; i++) {
+    let from = Math.floor(Math.random() * n) + 1;
+    let to = Math.floor(Math.random() * n) + 1;
+    if (from !== to && !edgeList.some(e => e[0]===from && e[1]===to)) {
+      edgeList.push([from, to]);
+    }
+  }
+  
+  buildGraphFromEdges(edgeList);
+}
+
+function generateRandomGraphComparison() {
+  currentGraphType = 'random_comparison';
+  let n = parseInt(document.getElementById('numVerticesComp').value);
+  if (n < 3 || n > 12) { alert('Escolha entre 3 e 12 vértices'); return; }
+  
+  vertices = [];
+  for (let i = 1; i <= n; i++) vertices.push(i);
+  
+  let edgeList = [], connected = [1], unconnected = [];
+  for (let i = 2; i <= n; i++) unconnected.push(i);
+  
+  while (unconnected.length > 0) {
+    let fromIdx = Math.floor(Math.random() * connected.length);
+    let toIdx = Math.floor(Math.random() * unconnected.length);
+    let from = connected[fromIdx], to = unconnected[toIdx];
+    edgeList.push([from, to]);
+    connected.push(to);
+    unconnected.splice(toIdx, 1);
+  }
+  
+  let numExtraEdges = Math.floor(n * 0.5);
+  for (let i = 0; i < numExtraEdges; i++) {
+    let from = Math.floor(Math.random() * n) + 1;
+    let to = Math.floor(Math.random() * n) + 1;
+    if (from !== to && !edgeList.some(e => (e[0]===from && e[1]===to) || (e[0]===to && e[1]===from))) {
+      edgeList.push([from, to]);
+    }
+  }
+  
+  buildGraphFromEdges(edgeList);
+}
+
+function loadComparisonPattern(patternNum) {
+  currentComparisonPattern = patternNum;
+  
+  if (isDirected) {
+    loadDirectedGraph();
+    return;
+  }
+  
+  if (patternNum === 1) {
+    currentGraphType = 'comparison_pattern1';
+    vertices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let edgeList = [[1,4],[1,5],[1,9],[2,3],[2,9],[3,6],[3,7],[3,9],[3,10],[4,5],[5,9],[6,8],[6,9],[6,10],[8,9],[8,10]];
+    buildGraphFromEdges(edgeList);
+  } else if (patternNum === 2) {
+    currentGraphType = 'comparison_pattern2';
+    vertices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let edgeList = [[1,9],[1,4],[1,5],[9,5],[5,4],[4,6],[4,2],[4,7],[4,8],[6,8],[8,2],[8,3],[8,10],[2,3],[2,7],[7,3]];
+    buildGraphFromEdges(edgeList);
+  } else if (patternNum === 3) {
+    currentGraphType = 'comparison_pattern3';
+    vertices = [1, 2, 3, 4, 5, 6, 7, 8];
+    let edgeList = [[1,2],[1,3],[2,4],[2,5],[3,6],[3,7],[4,8],[5,8],[6,8],[7,8]];
+    buildGraphFromEdges(edgeList);
+  }
+}
+
+function loadDefaultGraph() {
+  currentGraphType = 'default1';
+  vertices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  let edgeList = currentAlgorithm === 'bfs' ? 
+    [[1,4],[1,5],[1,9],[2,3],[2,9],[3,6],[3,7],[3,9],[3,10],[4,5],[5,9],[6,8],[6,9],[6,10],[8,9],[8,10]] :
+    [[1,9],[1,4],[1,5],[9,5],[5,4],[4,6],[4,2],[4,7],[4,8],[6,8],[8,2],[8,3],[8,10],[2,3],[2,7],[7,3]];
+  buildGraphFromEdges(edgeList);
+}
+
+function loadDefaultGraph2() {
+  currentGraphType = 'default2';
+  vertices = [1, 2, 3, 4, 5, 6, 7, 8];
+  let edgeList = [[1,2],[1,3],[2,4],[2,5],[3,6],[3,7],[4,8],[5,8],[6,8],[7,8]];
+  buildGraphFromEdges(edgeList);
+}
+
+function generateRandomGraph() {
+  currentGraphType = 'random';
+  let n = parseInt(document.getElementById('numVertices').value);
+  if (n < 3 || n > 12) { alert('Escolha entre 3 e 12 vértices'); return; }
+  
+  vertices = [];
+  for (let i = 1; i <= n; i++) vertices.push(i);
+  
+  let edgeList = [], connected = [1], unconnected = [];
+  for (let i = 2; i <= n; i++) unconnected.push(i);
+  
+  while (unconnected.length > 0) {
+    let fromIdx = Math.floor(Math.random() * connected.length);
+    let toIdx = Math.floor(Math.random() * unconnected.length);
+    let from = connected[fromIdx], to = unconnected[toIdx];
+    edgeList.push([from, to]);
+    connected.push(to);
+    unconnected.splice(toIdx, 1);
+  }
+  
+  let numExtraEdges = Math.floor(n * 0.5);
+  for (let i = 0; i < numExtraEdges; i++) {
+    let from = Math.floor(Math.random() * n) + 1;
+    let to = Math.floor(Math.random() * n) + 1;
+    if (from !== to && !edgeList.some(e => (e[0]===from && e[1]===to) || (e[0]===to && e[1]===from))) {
+      edgeList.push([from, to]);
+    }
+  }
+  
+  buildGraphFromEdges(edgeList);
+}
+
+function buildGraphFromEdges(edgeList) {
+  edges = [];
+  if (isDirected) {
+    edges = edgeList.map(e => [e[0], e[1]]);
+  } else {
+    for (let [u, v] of edgeList) { edges.push([u, v]); edges.push([v, u]); }
+  }
+  
+  adjList = {};
+  for (let v of vertices) adjList[v] = [];
+  for (let [u, v] of edges) {
+    if (!adjList[u].includes(v)) adjList[u].push(v);
+  }
+  for (let v of vertices) adjList[v].sort((a, b) => a - b);
+  
+  resetSimulation();
+  if (comparisonMode) {
+    if (isDirected) {
+      document.getElementById('stepBtnDirComp').disabled = false;
+    } else {
+      document.getElementById('stepBtnComp').disabled = false;
+    }
+  } else if (isDirected) {
+    document.getElementById('stepBtnDir').disabled = false;
+  } else {
+    document.getElementById('stepBtn').disabled = false;
+  }
+}
+
+function getPositions(canvasWidth, canvasHeight, algo) {
+  let positions = {};
+  let scale = canvasWidth / 650;
+  
+  if (isDirected && currentGraphType === 'directed_default') {
+    positions = {
+      1: {x:80*scale, y:120}, 2: {x:250*scale, y:80}, 3: {x:420*scale, y:80},
+      4: {x:40*scale, y:250}, 5: {x:150*scale, y:250}, 6: {x:400*scale, y:250},
+      7: {x:580*scale, y:80}, 8: {x:300*scale, y:380}, 9: {x:230*scale, y:250}, 10: {x:520*scale, y:380}
+    };
+  } else if (comparisonMode || currentGraphType.startsWith('comparison_pattern')) {
+    if (currentGraphType === 'comparison_pattern1' && vertices.length === 10) {
+      positions = {1:{x:165*scale,y:125},4:{x:65*scale,y:225},5:{x:165*scale,y:325},9:{x:320*scale,y:225},2:{x:320*scale,y:125},3:{x:430*scale,y:125},6:{x:430*scale,y:225},8:{x:320*scale,y:325},7:{x:560*scale,y:100},10:{x:560*scale,y:270}};
+    } else if (currentGraphType === 'comparison_pattern2' && vertices.length === 10) {
+      positions = {1:{x:166*scale,y:120},9:{x:74*scale,y:180},5:{x:166*scale,y:240},4:{x:294*scale,y:180},6:{x:386*scale,y:80},8:{x:478*scale,y:120},10:{x:598*scale,y:120},2:{x:478*scale,y:220},7:{x:386*scale,y:280},3:{x:598*scale,y:240}};
+    } else if (currentGraphType === 'comparison_pattern3' && vertices.length === 8) {
+      positions = {1:{x:325*scale,y:80},2:{x:200*scale,y:180},3:{x:450*scale,y:180},4:{x:120*scale,y:280},5:{x:280*scale,y:280},6:{x:370*scale,y:280},7:{x:530*scale,y:280},8:{x:325*scale,y:380}};
+    }
+  } else if (currentGraphType === 'default1' && vertices.length === 10) {
+    if (algo === 'bfs') {
+      positions = {1:{x:165*scale,y:125},4:{x:65*scale,y:225},5:{x:165*scale,y:325},9:{x:320*scale,y:225},2:{x:320*scale,y:125},3:{x:430*scale,y:125},6:{x:430*scale,y:225},8:{x:320*scale,y:325},7:{x:560*scale,y:100},10:{x:560*scale,y:270}};
+    } else {
+      positions = {1:{x:166*scale,y:120},9:{x:74*scale,y:180},5:{x:166*scale,y:240},4:{x:294*scale,y:180},6:{x:386*scale,y:80},8:{x:478*scale,y:120},10:{x:598*scale,y:120},2:{x:478*scale,y:220},7:{x:386*scale,y:280},3:{x:598*scale,y:240}};
+    }
+  } else if (currentGraphType === 'default2' && vertices.length === 8) {
+    positions = {1:{x:325*scale,y:80},2:{x:200*scale,y:180},3:{x:450*scale,y:180},4:{x:120*scale,y:280},5:{x:280*scale,y:280},6:{x:370*scale,y:280},7:{x:530*scale,y:280},8:{x:325*scale,y:380}};
+  } else {
+    let centerX = canvasWidth/2, centerY = canvasHeight/2;
+    let circleRadius = Math.min(centerX, centerY) - 50;
+    let n = vertices.length;
+    for (let i = 0; i < n; i++) {
+      let angle = (2 * Math.PI * i) / n - Math.PI / 2;
+      positions[vertices[i]] = {x: centerX + circleRadius * Math.cos(angle), y: centerY + circleRadius * Math.sin(angle)};
+    }
+  }
+  
+  return positions;
+}
+
+function drawArrow(ctx, fromX, fromY, toX, toY, radius) {
+  let angle = Math.atan2(toY - fromY, toX - fromX);
+  let arrowX = toX - radius * Math.cos(angle);
+  let arrowY = toY - radius * Math.sin(angle);
+  
+  ctx.beginPath();
+  ctx.moveTo(fromX + radius * Math.cos(angle), fromY + radius * Math.sin(angle));
+  ctx.lineTo(arrowX, arrowY);
+  ctx.stroke();
+  
+  let arrowSize = 10;
+  ctx.beginPath();
+  ctx.moveTo(arrowX, arrowY);
+  ctx.lineTo(arrowX - arrowSize * Math.cos(angle - Math.PI/6), arrowY - arrowSize * Math.sin(angle - Math.PI/6));
+  ctx.moveTo(arrowX, arrowY);
+  ctx.lineTo(arrowX - arrowSize * Math.cos(angle + Math.PI/6), arrowY - arrowSize * Math.sin(angle + Math.PI/6));
+  ctx.stroke();
+}
+
+function drawGraph(ctx, canvas, st, algo) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  let radius = 18;
+  let positions = getPositions(canvas.width, canvas.height, algo);
+  
+  ctx.strokeStyle = '#666'; ctx.lineWidth = 2;
+  let drawnEdges = new Set();
+  
+  for (let [from, to] of edges) {
+    if (isDirected) {
+      let pos1 = positions[from], pos2 = positions[to];
+      drawArrow(ctx, pos1.x, pos1.y, pos2.x, pos2.y, radius);
+    } else {
+      let edgeKey = from < to ? `${from}-${to}` : `${to}-${from}`;
+      if (drawnEdges.has(edgeKey)) continue;
+      drawnEdges.add(edgeKey);
+      ctx.beginPath();
+      ctx.moveTo(positions[from].x, positions[from].y);
+      ctx.lineTo(positions[to].x, positions[to].y);
+      ctx.stroke();
+    }
+  }
+  
+  for (let v of vertices) {
+    let pos = positions[v];
+    ctx.fillStyle = st.marked[v] ? '#4CAF50' : st.currentVertex === v ? '#FFC107' : st.ds.includes(v) ? '#FF9800' : '#fff';
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(pos.x, pos.y, radius, 0, 2*Math.PI); ctx.fill(); ctx.stroke();
+    
+    ctx.fillStyle = '#000'; ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(v, pos.x, pos.y);
+    
+    if (st.expl[v] !== undefined) {
+      ctx.fillStyle = '#c62828'; ctx.font = 'bold 12px Arial';
+      ctx.fillText(st.expl[v], pos.x + 22, pos.y - 5);
+    }
+  }
+}
+
+function drawTree(ctx, canvas, st) {
+  if (st.treeEdges.length === 0) {
+    canvas.height = 400;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#999'; ctx.font = '12px Arial'; ctx.textAlign = 'center';
+    ctx.fillText('Árvore em construção...', canvas.width/2, canvas.height/2);
+    return;
+  }
+  
+  let positions = calculateTreePositions(canvas.width, st);
+  let maxY = Math.max(...Object.values(positions).map(p => p.y));
+  canvas.height = Math.max(400, maxY + 80);
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#FF9800'; ctx.lineWidth = 2;
+  
+  for (let [from, to] of st.treeEdges) {
+    if (!positions[from] || !positions[to]) continue;
+    ctx.beginPath();
+    ctx.moveTo(positions[from].x, positions[from].y);
+    ctx.lineTo(positions[to].x, positions[to].y);
+    ctx.stroke();
+  }
+  
+  for (let v of vertices) {
+    if (!positions[v]) continue;
+    ctx.fillStyle = st.expl[v] !== undefined ? '#4CAF50' : '#fff';
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(positions[v].x, positions[v].y, 18, 0, 2*Math.PI);
+    ctx.fill(); ctx.stroke();
+    
+    ctx.fillStyle = '#000'; ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(v, positions[v].x, positions[v].y);
+  }
+}
+
+function calculateTreePositions(canvasWidth, st) {
+  let positions = {}, levels = {}, levelCounts = {};
+  
+  for (let v of vertices) {
+    if (st.expl[v] === 1) { levels[v] = 0; break; }
+  }
+  
+  for (let [from, to] of st.treeEdges) {
+    if (levels[from] !== undefined) levels[to] = levels[from] + 1;
+  }
+  
+  for (let v in levels) {
+    let level = levels[v];
+    if (!levelCounts[level]) levelCounts[level] = 0;
+    levelCounts[level]++;
+  }
+  
+  let levelIndices = {}, verticalSpacing = 70, startY = 40;
+  
+  for (let v in levels) {
+    let level = levels[v];
+    if (!levelIndices[level]) levelIndices[level] = 0;
+    let totalInLevel = levelCounts[level];
+    let horizontalSpacing = canvasWidth / (totalInLevel + 1);
+    positions[v] = {x: horizontalSpacing * (levelIndices[level] + 1), y: startY + level * verticalSpacing};
+    levelIndices[level]++;
+  }
+  
+  return positions;
+}
+
+function drawDataStructure(ctx, canvas, st, algo) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  let labelText = algo === 'bfs' ? 'Fila (Queue):' : 
+                  algo === 'dfs-recursive' ? 'Pilha de Chamadas:' : 'Pilha (Stack):';
+  ctx.fillStyle = '#333'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'left';
+  ctx.fillText(labelText, 20, 25);
+  
+  if (st.ds.length === 0) {
+    ctx.fillStyle = '#999'; ctx.font = '14px Arial'; ctx.textAlign = 'center';
+    ctx.fillText('[ vazia ]', canvas.width/2, 80);
+    return;
+  }
+  
+  let boxWidth = 65, boxHeight = 55, startX = 80, startY = 50, spacing = 5;
+  
+  if (algo === 'bfs') {
+    ctx.fillStyle = '#666'; ctx.font = '11px Arial'; ctx.textAlign = 'right';
+    ctx.fillText('FRONT', startX - 10, startY + boxHeight/2);
+    
+    for (let i = 0; i < st.ds.length; i++) {
+      let x = startX + i * (boxWidth + spacing);
+      ctx.fillStyle = i === 0 ? '#2196F3' : '#64B5F6';
+      ctx.fillRect(x, startY, boxWidth, boxHeight);
+      ctx.strokeStyle = '#1976D2'; ctx.lineWidth = 2; ctx.strokeRect(x, startY, boxWidth, boxHeight);
+      
+      ctx.fillStyle = '#000'; ctx.font = 'bold 18px Arial';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(st.ds[i], x + boxWidth/2, startY + boxHeight/2);
+    }
+    
+    let lastX = startX + (st.ds.length - 1) * (boxWidth + spacing);
+    ctx.fillStyle = '#666'; ctx.font = '11px Arial'; ctx.textAlign = 'left';
+    ctx.fillText('REAR', lastX + boxWidth + 10, startY + boxHeight/2);
+  } else {
+    ctx.fillStyle = '#666'; ctx.font = '11px Arial'; ctx.textAlign = 'right';
+    ctx.fillText('BOTTOM', startX - 10, startY + boxHeight/2);
+    
+    for (let i = 0; i < st.ds.length; i++) {
+      let x = startX + i * (boxWidth + spacing);
+      ctx.fillStyle = i === st.ds.length - 1 ? '#FF9800' : '#FFB74D';
+      ctx.fillRect(x, startY, boxWidth, boxHeight);
+      ctx.strokeStyle = '#F57C00'; ctx.lineWidth = 2; ctx.strokeRect(x, startY, boxWidth, boxHeight);
+      
+      ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      if (algo === 'dfs-recursive') {
+        ctx.font = '11px Arial'; ctx.fillText('DFS', x + boxWidth/2, startY + 8);
+      }
+      ctx.font = 'bold 18px Arial'; ctx.textBaseline = 'middle';
+      let yOffset = algo === 'dfs-recursive' ? startY + boxHeight/2 + 5 : startY + boxHeight/2;
+      ctx.fillText(st.ds[i], x + boxWidth/2, yOffset);
+    }
+    
+    let lastX = startX + (st.ds.length - 1) * (boxWidth + spacing);
+    ctx.fillStyle = '#666'; ctx.font = '11px Arial'; ctx.textAlign = 'left';
+    ctx.fillText('TOP', lastX + boxWidth + 10, startY + boxHeight/2);
+  }
+}
+
+function stepSimulation() {
+  if (comparisonMode) {
+    stepComparisonMode();
+  } else {
+    stepSingleMode();
+  }
+}
+
+function stepSingleMode() {
+  if (state.stepIndex >= state.steps.length) return;
+  
+  if (!simulationStarted) {
+    simulationStarted = true;
+    document.getElementById('stateDisplay').style.display = 'block';
+  }
+  
+  let step = state.steps[state.stepIndex];
+  executeStep(step, state);
+  
+  if (step.message) {
+    state.output += step.message + '\n';
+    document.getElementById('output').textContent = state.output;
+    document.getElementById('output').scrollTop = document.getElementById('output').scrollHeight;
+  }
+  
+  state.stepIndex++;
+  
+  let algo = currentAlgorithm === 'bfs' ? 'bfs' : 
+             currentAlgorithm === 'dfs' && dfsVersion === 'recursive' ? 'dfs-recursive' : 'dfs-iterative';
+  drawGraph(canvases.graphCtx, canvases.graph, state, algo);
+  drawTree(canvases.treeCtx, canvases.tree, state);
+  drawDataStructure(canvases.dsCtx, canvases.ds, state, algo);
+  
+  updateSingleDisplay();
+}
+
+function stepComparisonMode() {
+  let hasLeftStep = stateLeft.stepIndex < stateLeft.steps.length;
+  let hasRightStep = stateRight.stepIndex < stateRight.steps.length;
+  
+  if (!hasLeftStep && !hasRightStep) return;
+  
+  if (hasLeftStep) {
+    let step = stateLeft.steps[stateLeft.stepIndex];
+    executeStep(step, stateLeft);
+    if (step.message) {
+      stateLeft.output += step.message + '\n';
+      document.getElementById('output-left').textContent = stateLeft.output;
+      document.getElementById('output-left').scrollTop = document.getElementById('output-left').scrollHeight;
+    }
+    stateLeft.stepIndex++;
+  }
+  
+  if (hasRightStep) {
+    let step = stateRight.steps[stateRight.stepIndex];
+    executeStep(step, stateRight);
+    if (step.message) {
+      stateRight.output += step.message + '\n';
+      document.getElementById('output-right').textContent = stateRight.output;
+      document.getElementById('output-right').scrollTop = document.getElementById('output-right').scrollHeight;
+    }
+    stateRight.stepIndex++;
+  }
+  
+  drawGraph(canvases.graphLeftCtx, canvases.graphLeft, stateLeft, comparisonLeftAlgo);
+  drawTree(canvases.treeLeftCtx, canvases.treeLeft, stateLeft);
+  drawDataStructure(canvases.dsLeftCtx, canvases.dsLeft, stateLeft, comparisonLeftAlgo);
+  
+  drawGraph(canvases.graphRightCtx, canvases.graphRight, stateRight, comparisonRightAlgo);
+  drawTree(canvases.treeRightCtx, canvases.treeRight, stateRight);
+  drawDataStructure(canvases.dsRightCtx, canvases.dsRight, stateRight, comparisonRightAlgo);
+  
+  updateComparisonDisplay();
+}
+
+function executeStep(step, st) {
+  switch(step.type) {
+    case 'enqueue': case 'push': st.ds.push(step.v); st.currentVertex = step.v; break;
+    case 'dequeue': case 'top': st.currentVertex = step.v; break;
+    case 'dequeue-remove': st.ds.shift(); st.currentVertex = st.ds.length > 0 ? st.ds[0] : null; break;
+    case 'pop': st.ds.pop(); st.currentVertex = st.ds.length > 0 ? st.ds[st.ds.length-1] : null; break;
+    case 'mark': st.marked[step.v] = true; break;
+    case 'expl': st.expl[step.v] = step.cont; st.cont = step.cont; break;
+    case 'tree_edge': st.treeEdges.push([step.from, step.to]); st.treeParent[step.to] = step.from; break;
+    case 'complete': st.currentVertex = null; break;
+  }
+}
+
+function updateSingleDisplay() {
+  let varsHtml = `<div class="var-display"><strong>cont:</strong> ${state.cont}</div>`;
+  if (currentAlgorithm === 'dfs') {
+    varsHtml += `<div class="var-display"><strong>${(dfsVersion === 'recursive' || isDirected) ? 'Profundidade' : 'Tamanho'}:</strong> ${state.ds.length}</div>`;
+  }
+  document.getElementById('variables').innerHTML = varsHtml;
+  
+  let dsDisplay = currentAlgorithm === 'bfs' ? state.ds.join(', ') :
+                  (dfsVersion === 'recursive' || isDirected) ? state.ds.map(v => `DFS(${v})`).join(', ') : state.ds.join(', ');
+  document.getElementById('dsContent').textContent = '[' + dsDisplay + ']';
+}
+
+function updateComparisonDisplay() {
+  document.getElementById('variables-left').innerHTML = `<div class="var-display"><strong>cont:</strong> ${stateLeft.cont}</div>`;
+  document.getElementById('variables-right').innerHTML = `<div class="var-display"><strong>cont:</strong> ${stateRight.cont}</div>`;
+  
+  let leftDisplay, rightDisplay;
+  
+  if (comparisonType === 'bfs-vs-dfs') {
+    leftDisplay = stateLeft.ds.join(', ');
+    rightDisplay = stateRight.ds.map(v => `DFS(${v})`).join(', ');
+  } else {
+    leftDisplay = stateLeft.ds.map(v => `DFS(${v})`).join(', ');
+    rightDisplay = stateRight.ds.join(', ');
+  }
+  
+  document.getElementById('dsContent-left').textContent = '[' + leftDisplay + ']';
+  document.getElementById('dsContent-right').textContent = '[' + rightDisplay + ']';
+}
+
+function resetSimulation() {
+  simulationStarted = false;
+  
+  if (comparisonMode) {
+    stateLeft = {marked:{}, expl:{}, ds:[], cont:0, currentVertex:null, treeEdges:[], treeParent:{}, steps:[], stepIndex:0, output:''};
+    stateRight = {marked:{}, expl:{}, ds:[], cont:0, currentVertex:null, treeEdges:[], treeParent:{}, steps:[], stepIndex:0, output:''};
+    
+    prepareSteps(comparisonLeftAlgo, stateLeft);
+    prepareSteps(comparisonRightAlgo, stateRight);
+    
+    document.getElementById('output-left').textContent = '';
+    document.getElementById('output-right').textContent = '';
+    
+    drawGraph(canvases.graphLeftCtx, canvases.graphLeft, stateLeft, comparisonLeftAlgo);
+    drawTree(canvases.treeLeftCtx, canvases.treeLeft, stateLeft);
+    drawDataStructure(canvases.dsLeftCtx, canvases.dsLeft, stateLeft, comparisonLeftAlgo);
+    
+    drawGraph(canvases.graphRightCtx, canvases.graphRight, stateRight, comparisonRightAlgo);
+    drawTree(canvases.treeRightCtx, canvases.treeRight, stateRight);
+    drawDataStructure(canvases.dsRightCtx, canvases.dsRight, stateRight, comparisonRightAlgo);
+  } else {
+    state = {marked:{}, expl:{}, ds:[], cont:0, currentVertex:null, treeEdges:[], treeParent:{}, steps:[], stepIndex:0, output:''};
+    
+    document.getElementById('stateDisplay').style.display = 'none';
+    document.getElementById('output').textContent = '';
+    
+    let algo = currentAlgorithm === 'bfs' ? 'bfs' : 
+               dfsVersion === 'recursive' ? 'dfs-recursive' : 'dfs-iterative';
+    prepareSteps(algo, state);
+    
+    drawGraph(canvases.graphCtx, canvases.graph, state, algo);
+    drawTree(canvases.treeCtx, canvases.tree, state);
+    drawDataStructure(canvases.dsCtx, canvases.ds, state, algo);
+  }
+}
+
+function prepareSteps(algo, st) {
+  st.steps = [];
+  
+  if (algo === 'bfs') {
+    prepareBFSSteps(st);
+  } else if (algo === 'dfs-recursive') {
+    prepareDFSRecursiveSteps(st);
+  } else if (algo === 'dfs-iterative') {
+    prepareDFSIterativeSteps(st);
+  }
+}
+
+function prepareBFSSteps(st) {
+  st.steps.push({type:'init', message:'cont = 0'});
+  st.steps.push({type:'unmark_all', message:'Desmarcar todos os vértices'});
+  st.steps.push({type:'init_queue', message:'Criar fila Q'});
+  st.steps.push({type:'mark', v:1, message:'Marcar vértice 1'});
+  st.steps.push({type:'enqueue', v:1, message:'enqueue(Q, 1)'});
+  
+  let tempMarked = {1:true}, tempCont = 0, tempQueue = [1];
+  
+  while (tempQueue.length > 0) {
+    let curr = tempQueue[0];
+    st.steps.push({type:'dequeue', v:curr, message:`curr = dequeue(Q) = ${curr}`});
+    st.steps.push({type:'dequeue-remove', v:curr, message:`Remover ${curr} da fila`});
+    tempQueue.shift();
+    
+    tempCont++;
+    st.steps.push({type:'expl', v:curr, cont:tempCont, message:`expl[${curr}] = ++cont = ${tempCont}`});
+    st.steps.push({type:'explore', v:curr, message:`Explorando vértice ${curr}`});
+    
+    for (let u of adjList[curr]) {
+      if (!tempMarked[u]) {
+        tempMarked[u] = true;
+        tempQueue.push(u);
+        st.steps.push({type:'check_unmarked', from:curr, to:u, message:`Aresta ${isDirected?'<'+curr+','+u+'>':'<'+curr+','+u+'>'}: ${u} está desmarcado`});
+        st.steps.push({type:'mark', v:u, message:`Marcar vértice ${u}`});
+        st.steps.push({type:'tree_edge', from:curr, to:u, message:`Adicionar aresta ${curr}->${u} à árvore`});
+        st.steps.push({type:'enqueue', v:u, message:`enqueue(Q, ${u})`});
+      }
+    }
+  }
+  
+  st.steps.push({type:'complete', message:'BFS completo!'});
+}
+
+function prepareDFSRecursiveSteps(st) {
+  st.steps.push({type:'init', message:'cont = 0'});
+  st.steps.push({type:'unmark_all', message:'Desmarcar todos os vértices'});
+  st.steps.push({type:'call_dfs', v:1, message:'Chamar DFS(1)'});
+  
+  let tempMarked = {}, counter = {value:0};
+  simulateDFSRecursive(1, tempMarked, {}, counter, st.steps, 0);
+  
+  st.steps.push({type:'complete', message:'DFS completo!'});
+}
+
+function simulateDFSRecursive(v, tempMarked, tempExpl, counter, steps, depth) {
+  steps.push({type:'push', v:v, message:`  ${'  '.repeat(depth)}Entrar em DFS(${v})`});
+  steps.push({type:'mark', v:v, message:`  ${'  '.repeat(depth)}Marcar vértice ${v}`});
+  tempMarked[v] = true;
+  
+  counter.value++;
+  steps.push({type:'expl', v:v, cont:counter.value, message:`  ${'  '.repeat(depth)}expl[${v}] = ++cont = ${counter.value}`});
+  steps.push({type:'explore', v:v, message:`  ${'  '.repeat(depth)}Explorando vértice ${v}`});
+  
+  for (let u of adjList[v]) {
+    if (!tempMarked[u]) {
+      steps.push({type:'check_unmarked', from:v, to:u, message:`  ${'  '.repeat(depth)}Aresta ${isDirected?'<'+v+','+u+'>':'<'+v+','+u+'>'}: ${u} está desmarcado`});
+      steps.push({type:'tree_edge', from:v, to:u, message:`  ${'  '.repeat(depth)}Adicionar aresta ${v}->${u} à árvore`});
+      steps.push({type:'recursive_call', v:u, message:`  ${'  '.repeat(depth)}Chamar DFS(${u})`});
+      
+      simulateDFSRecursive(u, tempMarked, tempExpl, counter, steps, depth + 1);
+      
+      steps.push({type:'return_from', v:u, message:`  ${'  '.repeat(depth)}Retornar de DFS(${u})`});
+    } else {
+      steps.push({type:'check_marked', from:v, to:u, message:`  ${'  '.repeat(depth)}Aresta ${isDirected?'<'+v+','+u+'>':'<'+v+','+u+'>'}: ${u} já marcado`});
+    }
+  }
+  
+  steps.push({type:'pop', v:v, message:`  ${'  '.repeat(depth)}Sair de DFS(${v})`});
+}
+
+function prepareDFSIterativeSteps(st) {
+  st.steps.push({type:'unmark_all', message:'Desmarcar todos os vértices'});
+  st.steps.push({type:'init_stack', message:'Criar pilha P'});
+  st.steps.push({type:'init', message:'cont = 0'});
+  st.steps.push({type:'mark', v:1, message:'Marcar vértice 1'});
+  st.steps.push({type:'push', v:1, message:'push(P, 1)'});
+  
+  let tempMarked = {1:true}, tempCont = 0, tempStack = [1];
+  
+  while (tempStack.length > 0) {
+    let curr = tempStack[tempStack.length - 1];
+    st.steps.push({type:'top', v:curr, message:`curr = top(P) = ${curr}`});
+    st.steps.push({type:'pop', v:curr, message:`pop(P)`});
+    tempStack.pop();
+    
+    tempCont++;
+    st.steps.push({type:'expl', v:curr, cont:tempCont, message:`expl[${curr}] = ++cont = ${tempCont}`});
+    st.steps.push({type:'explore', v:curr, message:`Explorando vértice ${curr}`});
+    
+    let adjacents = [...adjList[curr]].reverse();
+    
+    for (let u of adjacents) {
+      if (!tempMarked[u]) {
+        tempMarked[u] = true;
+        tempStack.push(u);
+        st.steps.push({type:'check_unmarked', from:curr, to:u, message:`Aresta <${curr},${u}>: ${u} está desmarcado`});
+        st.steps.push({type:'mark', v:u, message:`Marcar vértice ${u}`});
+        st.steps.push({type:'tree_edge', from:curr, to:u, message:`Adicionar aresta ${curr}->${u} à árvore`});
+        st.steps.push({type:'push', v:u, message:`push(P, ${u})`});
+      }
+    }
+  }
+  
+  st.steps.push({type:'complete', message:'DFS completo!'});
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
